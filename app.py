@@ -9,16 +9,15 @@ st.write(
     "but also why they rank highly, what action to take next, and a suggested outreach message."
 )
 
-# -----------------------------
-# TARGET INPUTS
-# -----------------------------
+
+# target inputs
+
 st.sidebar.header("Target Criteria")
 target_industry = st.sidebar.text_input("Target Industry", value="Healthcare")
 target_location = st.sidebar.text_input("Target Location", value="London")
 
-# -----------------------------
-# WEIGHTS
-# -----------------------------
+
+# weights
 st.sidebar.header("Scoring Weights")
 industry_weight_raw = st.sidebar.slider("Industry Match", 0, 50, 25)
 location_weight_raw = st.sidebar.slider("Location Match", 0, 50, 20)
@@ -26,9 +25,7 @@ contactability_weight_raw = st.sidebar.slider("Contactability", 0, 50, 20)
 confidence_weight_raw = st.sidebar.slider("Confidence", 0, 50, 15)
 revenue_weight_raw = st.sidebar.slider("Revenue Potential", 0, 50, 20)
 
-# -----------------------------
 # UX Warning for Equal Weights
-# -----------------------------
 weights = [
     industry_weight_raw,
     location_weight_raw,
@@ -70,9 +67,8 @@ with st.sidebar.expander("Normalized Weights"):
     st.write(f"Confidence: {confidence_weight:.2f}")
     st.write(f"Revenue Potential: {revenue_weight:.2f}")
 
-# -----------------------------
-# FILE UPLOAD
-# -----------------------------
+# file upload
+
 st.sidebar.header("Upload Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload a CSV file", type=["csv"])
 
@@ -86,9 +82,7 @@ required_columns = [
     "revenue",
 ]
 
-# -----------------------------
-# SAMPLE DATA
-# -----------------------------
+# sample data
 sample_data = [
     {
         "company_name": "HealthTech Solutions",
@@ -155,9 +149,7 @@ sample_data = [
     },
 ]
 
-# -----------------------------
-# LOAD DATA
-# -----------------------------
+# load data
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
 
@@ -183,9 +175,7 @@ df = df.fillna("")
 st.subheader("Input Data")
 st.dataframe(df, use_container_width=True)
 
-# -----------------------------
-# HELPER FUNCTIONS
-# -----------------------------
+
 def safe_lower(x):
     return str(x).strip().lower()
 
@@ -269,14 +259,12 @@ def generate_outreach_message(company, industry, location, action):
 def dataframe_to_csv_download(df_to_download):
     return df_to_download.to_csv(index=False).encode("utf-8")
 
-# -----------------------------
-# CALCULATIONS
-# -----------------------------
+
 results = []
 
 for _, row in df.iterrows():
 
-    # INDUSTRY MATCH
+    # industry match
     if safe_lower(target_industry) in safe_lower(row["industry"]):
         industry_score = industry_weight
         industry_label = "High"
@@ -284,7 +272,7 @@ for _, row in df.iterrows():
         industry_score = 0
         industry_label = "Low"
 
-    # LOCATION MATCH
+    # location match
     if safe_lower(target_location) in safe_lower(row["location"]):
         location_score = location_weight
         location_label = "High"
@@ -292,7 +280,7 @@ for _, row in df.iterrows():
         location_score = 0
         location_label = "Low"
 
-    # RELEVANCE
+    # revlevance
     relevance_score = industry_score + location_score
     if relevance_score >= 0.7 * (industry_weight + location_weight):
         relevance_label = "High"
@@ -301,7 +289,7 @@ for _, row in df.iterrows():
     else:
         relevance_label = "Low"
 
-    # CONTACTABILITY
+   # contactability
     contact_points = sum([
         yes_no(row["website"]),
         yes_no(row["company_linkedin"]),
@@ -321,7 +309,7 @@ for _, row in df.iterrows():
         contact_score = 0
         contact_label = "Low"
 
-    # CONFIDENCE
+    # confidence score based on data completeness
     filled = sum([
         is_filled(row["industry"]),
         is_filled(row["location"]),
@@ -343,10 +331,10 @@ for _, row in df.iterrows():
         confidence_score = 0
         confidence_label = "Low"
 
-    # REVENUE
+    # revenue potential
     revenue_score, revenue_label = revenue_bucket(row["revenue"])
 
-    # FINAL SCORE
+    # final score
     final_score = relevance_score + contact_score + confidence_score + revenue_score
     final_score = round(final_score, 2)
 
@@ -383,14 +371,10 @@ for _, row in df.iterrows():
         "Suggested Outreach Message": outreach_message,
     })
 
-# -----------------------------
-# OUTPUT
-# -----------------------------
+
 result_df = pd.DataFrame(results).sort_values(by="Final Score", ascending=False)
 
-# -----------------------------
-# LEAD SUMMARY
-# -----------------------------
+
 st.subheader("Lead Summary")
 
 col1, col2, col3, col4 = st.columns(4)
@@ -399,9 +383,8 @@ col2.metric("High Priority", (result_df["Priority"] == "High Priority").sum())
 col3.metric("Medium Priority", (result_df["Priority"] == "Medium Priority").sum())
 col4.metric("Low Priority", (result_df["Priority"] == "Low Priority").sum())
 
-# -----------------------------
-# PRIORITY FILTER
-# -----------------------------
+# priority filter
+
 priority_filter = st.selectbox(
     "Filter by Priority",
     ["All", "High Priority", "Medium Priority", "Low Priority"]
@@ -423,9 +406,7 @@ st.download_button(
     mime="text/csv",
 )
 
-# -----------------------------
-# TOP 3 LEADS
-# -----------------------------
+# top 3 recommendations
 st.subheader("Top 3 Recommended Leads")
 
 top_3 = result_df.head(3)
@@ -444,9 +425,7 @@ if not top_3.empty:
 else:
     st.warning("No leads available to score.")
 
-# -----------------------------
-# OUTREACH ASSISTANT
-# -----------------------------
+# detailed view for selected lead
 st.subheader("Smart Outreach Assistant")
 
 if not result_df.empty:
